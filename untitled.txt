@@ -1,0 +1,172 @@
+// Ronaqk T-Shirt Shop - Single File React Component
+// كيفية الاستخدام (بالعربية):
+// 1. أنشئ مشروع React جديد (Vite أو Create React App).
+// 2. ثبت TailwindCSS واتبع إعداداته أو استخدم CDN Tailwind في index.html.
+// 3. انسخ هذا الملف كمكوِّن React (مثلاً src/App.jsx) واستعمله كـ default export.
+// 4. هذا المثال يستخدم بيانات ثابتة (mock). يمكنك ربطه بواجهة برمجة تطبيقات لاحقًا.
+
+import React, { useState, useMemo } from "react";
+
+// بيانات منتجات تجريبية
+const PRODUCTS = [
+  { id: 1, title: "Printed Oversized T-Shirt", color: "Black", price: 250, size: "M", img: "https://via.placeholder.com/420x420?text=Black+T-Shirt" },
+  { id: 2, title: "Printed Oversized T-Shirt", color: "Olive", price: 270, size: "M", img: "https://via.placeholder.com/420x420?text=Olive+T-Shirt" },
+  { id: 3, title: "Basic Tee", color: "White", price: 200, size: "L", img: "https://via.placeholder.com/420x420?text=White+Tee" },
+  { id: 4, title: "Graphic Tee", color: "Blue", price: 300, size: "S", img: "https://via.placeholder.com/420x420?text=Blue+Graphic" },
+  { id: 5, title: "Classic Tee", color: "Green", price: 230, size: "M", img: "https://via.placeholder.com/420x420?text=Green+Classic" },
+  { id: 6, title: "Navy Cotton Tee", color: "Navy", price: 260, size: "L", img: "https://via.placeholder.com/420x420?text=Navy+Cotton" }
+];
+
+export default function App() {
+  const [query, setQuery] = useState("");
+  const [colorFilter, setColorFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
+  const [cart, setCart] = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  const colors = useMemo(() => ["All", ...Array.from(new Set(PRODUCTS.map(p => p.color)))], []);
+
+  function addToCart(product) {
+    setCart(prev => {
+      const found = prev.find(p => p.id === product.id);
+      if (found) return prev.map(p => p.id === product.id ? { ...p, qty: p.qty + 1 } : p);
+      return [...prev, { ...product, qty: 1 }];
+    });
+  }
+
+  function removeFromCart(id) {
+    setCart(prev => prev.filter(p => p.id !== id));
+  }
+
+  function changeQty(id, delta) {
+    setCart(prev => prev.map(p => p.id === id ? { ...p, qty: Math.max(1, p.qty + delta) } : p));
+  }
+
+  const filtered = useMemo(() => {
+    let res = PRODUCTS.filter(p =>
+      p.title.toLowerCase().includes(query.toLowerCase())
+    );
+    if (colorFilter !== "All") res = res.filter(p => p.color === colorFilter);
+    if (sortBy === "price-asc") res = res.sort((a, b) => a.price - b.price);
+    if (sortBy === "price-desc") res = res.sort((a, b) => b.price - a.price);
+    if (sortBy === "newest") res = res.sort((a, b) => b.id - a.id);
+    return res;
+  }, [query, colorFilter, sortBy]);
+
+  const total = cart.reduce((s, p) => s + p.price * p.qty, 0);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <header className="max-w-7xl mx-auto flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Ronaqk - T-Shirt Collection</h1>
+        <div className="flex items-center gap-4">
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="ابحث عن تيشيرت..."
+            className="border rounded px-3 py-2" />
+          <button className="px-3 py-2 bg-black text-white rounded" onClick={() => { setQuery(""); setColorFilter("All"); setSortBy("newest"); }}>إعادة</button>
+          <div className="relative">
+            <button className="px-3 py-2 bg-white border rounded">🛒 {cart.length}</button>
+            <div className="absolute right-0 mt-2 w-80 bg-white border rounded shadow p-4">
+              <h3 className="font-semibold">سلة المشتريات</h3>
+              {cart.length === 0 && <p className="text-sm text-gray-500">السلة فارغة</p>}
+              <ul className="mt-2 space-y-2">
+                {cart.map(item => (
+                  <li key={item.id} className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm">{item.title} - {item.color}</div>
+                      <div className="text-xs text-gray-500">{item.qty} × {item.price} ج.م</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => changeQty(item.id, -1)} className="px-2">-</button>
+                      <button onClick={() => changeQty(item.id, 1)} className="px-2">+</button>
+                      <button onClick={() => removeFromCart(item.id)} className="text-red-500">حذف</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex justify-between items-center">
+                <strong>المجموع</strong>
+                <span>{total} ج.م</span>
+              </div>
+              <button className="w-full mt-3 py-2 bg-green-600 text-white rounded">تابع السداد</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <aside className="md:col-span-1 bg-white p-4 rounded shadow">
+          <h3 className="font-semibold">تصفية</h3>
+          <div className="mt-3">
+            <label className="block text-sm">اللون</label>
+            <select value={colorFilter} onChange={e => setColorFilter(e.target.value)} className="w-full border rounded px-2 py-1 mt-1">
+              {colors.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div className="mt-3">
+            <label className="block text-sm">ترتيب</label>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full border rounded px-2 py-1 mt-1">
+              <option value="newest">الأحدث</option>
+              <option value="price-asc">السعر: من الأقل</option>
+              <option value="price-desc">السعر: من الأعلى</option>
+            </select>
+          </div>
+
+          <div className="mt-4">
+            <h4 className="font-semibold">نصائح:</h4>
+            <ul className="text-sm text-gray-600 list-disc pl-5 mt-2">
+              <li>ربط هذه الواجهة بواجهة برمجة تطبيقات للحصول على المنتجات الحقيقية.</li>
+              <li>أضف نظام تسجيل دخول وعرض المخزون.</li>
+            </ul>
+          </div>
+        </aside>
+
+        <section className="md:col-span-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(prod => (
+              <article key={prod.id} className="bg-white rounded shadow overflow-hidden">
+                <img src={prod.img} alt={prod.title} className="w-full h-56 object-cover" />
+                <div className="p-4">
+                  <h3 className="font-semibold">{prod.title}</h3>
+                  <div className="text-sm text-gray-600">{prod.color} - {prod.size}</div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-lg font-bold">{prod.price} ج.م</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { setSelected(prod); }} className="px-3 py-1 border rounded">عرض</button>
+                      <button onClick={() => addToCart(prod)} className="px-3 py-1 bg-black text-white rounded">أضف للسلة</button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Modal */}
+      {selected && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded shadow max-w-2xl w-full overflow-hidden">
+            <div className="p-4 flex gap-4">
+              <img src={selected.img} alt="selected" className="w-48 h-48 object-cover" />
+              <div>
+                <h2 className="text-xl font-bold">{selected.title}</h2>
+                <p className="text-sm text-gray-600">اللون: {selected.color}</p>
+                <p className="mt-2 font-semibold">{selected.price} ج.م</p>
+                <div className="mt-4 flex gap-2">
+                  <button onClick={() => { addToCart(selected); setSelected(null); }} className="px-4 py-2 bg-black text-white rounded">أضف للسلة</button>
+                  <button onClick={() => setSelected(null)} className="px-4 py-2 border rounded">إغلاق</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="max-w-7xl mx-auto mt-8 text-center text-gray-500">الشحن المجاني على الطلبات فوق 800 ج.م — عينات مجانية متاحة</footer>
+    </div>
+  );
+}
